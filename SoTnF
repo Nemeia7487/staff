@@ -1,0 +1,119 @@
+embed <drac2>
+cc="Staff of Thunder and Lightning"
+ccL="SoTnL Lightning"
+ccT="SoTnL Thunder"
+ccLS="SoTnL Lightning Strike"
+ccTC="SoTnL Thunderclap"
+ccTL="SoTnL Thunder and Lightning"
+character().create_cc_nx(ccL,0,1,'long','bubble')
+character().create_cc_nx(ccT,0,1,'long','bubble')
+character().create_cc_nx(ccLS,0,1,'long','bubble')
+character().create_cc_nx(ccTC,0,1,'long','bubble')
+character().create_cc_nx(ccTL,0,1,'long','bubble')
+vT=character().get_cc(ccT)
+vLS=character().get_cc(ccLS)
+vTC=character().get_cc(ccTC)
+vTL=character().get_cc(ccTL)
+a=argparse(&ARGS&)
+i=a.get('i')
+t=a.last('t') if a.last('t') else ''
+c=combat()
+f="**Description:**\nThis staff can be wielded as a magic quarterstaff that grants a +2 bonus to attack and damage rolls made with it. It also has the following additional properties. When one of these properties is used, it can't be used again until the next dawn."
+f1="__Using a special ability:__|`!stnl [thunder, strike, clap, duel]`"
+
+if '&1&'.lower() in 'thunder':
+	if vT or i:
+		character().mod_cc(ccT,-1) if not i else ''
+		if c:
+			if t:
+				targ=c.get_combatant(t)
+				save=targ.save('con') if targ else err(f"Your target '{t}' is not in combat.")
+				if save.total<17 and targ:
+					targ.add_effect('Stunned - Staff of Thunder and Lightning','',2,desc='When you hit with a melee attack using the staff, you can cause the staff to emit a crack of thunder, audible out to 300 feet. The target you hit must succeed on a DC 17 Constitution saving throw or become stunned until the end of your next turn.')
+					return f'''-title "{name} tries to Stun with the {cc}!" -f "Stun|**DC 17**" -f "{targ.name}|**CON Save:** {save}; Failure!\n**Effect:** {targ.get_effect('Stun - Staff of Thunder and Lightning')}" -f "Stun|When you hit with a melee attack using the staff, you can cause the staff to emit a crack of thunder, audible out to 300 feet. The target you hit must succeed on a DC 17 Constitution saving throw or become stunned until the end of your next turn. This property cannot be used again until the next dawn." -f "{ccT}{' (-1)' if not i else ''}|{character().cc_str(ccT)}" -footer "{ctx.prefix}{ctx.alias}" '''
+				else:
+					return f'''-title "{name} tries to Stun with the {cc}!" -f "Stun|**DC 17**" -f "{targ.name}|**CON Save:** {save}; Success!" -f "Thunder|When you hit with a melee attack using the staff, you can cause the staff to emit a crack of thunder, audible out to 300 feet. The target you hit must succeed on a DC 17 Constitution saving throw or become stunned until the end of your next turn. This property cannot be used again until the next dawn." -f "{ccT}{' (-1)' if not i else ''}|{character().cc_str(ccT)}" -footer "{ctx.prefix}{ctx.alias}" '''
+			else:
+				return f'''-title "{name} tries to Stun with the {cc}!" -f "Stun|**DC 17**\n(No Target Specified.)" -f "Thunder|When you hit with a melee attack using the staff, you can cause the staff to emit a crack of thunder, audible out to 300 feet. The target you hit must succeed on a DC 17 Constitution saving throw or become stunned until the end of your next turn. This property cannot be used again until the next dawn." -f "{ccT}{' (-1)' if not i else ''}|{character().cc_str(ccT)}" -footer "{ctx.prefix}{ctx.alias}" '''
+		else:
+			return f'''-title "{name} tries to Stun with the {cc}!" -f "Stun|**DC 17**\n(Cannot apply effects outside of combat.)" -f "Thunder|When you hit with a melee attack using the staff, you can cause the staff to emit a crack of thunder, audible out to 300 feet. The target you hit must succeed on a DC 17 Constitution saving throw or become stunned until the end of your next turn. This property cannot be used again until the next dawn." -f "{ccT}{' (-1)' if not i else ''}|{character().cc_str(ccT)}" -footer "{ctx.prefix}{ctx.alias}" '''
+	else:
+		return f'''-title "{name} already used their {cc} to Stun!" -desc "You need to wait until dawn to use this feature again." -f "{ccT}|{character().cc_str(ccT)}" -footer "{ctx.prefix}{ctx.alias}" '''
+
+elif '&1&'.lower() in 'strike':
+	if vLS or i:
+		if c:
+			if a.get('t'):
+				character().mod_cc(ccLS,-1) if not i else ''
+				dc, out = 17, [' -f "Staff of Thunder and Lightning|DC 17"']
+				targets = a.get('t')
+				targ = c.get_combatant(t)
+				ls=vroll('9d6[lightning]')
+				lsf=ls.total
+				lsh=ls.total//2
+				for target in targets:
+					targList = target.split('|')
+					targComb = combat().get_combatant(targList[0])
+					targName = targComb.name
+					targARGs = argparse(targList[1] if len(targList)>1 else [])
+					targBonus = targARGs.get('sb')
+					dice = targComb.saves.get("dex").d20(targARGs.adv(boolwise=True))
+					save = targ.save('dex') if targ else err(f"Your target '{t}' is not in combat.")
+					saveRoll = vroll(f'{dice} {"+"+"+".join(targBonus) if targBonus else ""}')
+				if save.total<17 and targ:
+					damage = lsf
+				if save.total>17 and targ:
+					half = lsh
+					return f'''-title "{name} uses a Lightning Strike with {cc}!" -f "Lightning Strike|**DC 17**" -f "{targ.name}|**DEX Save:** {save}; Failure!\n{damage}" -f "Lightning Strike|You can use an action to cause a bolt of lightning to leap from the staff's tip in a line that is 5 feet wide and 120 feet long. Each creature in that line must make a DC 17 Dexterity saving throw, taking 9d6 lightning damage on a failed save, or half as much damage on a successful one. This property cannot be used again until the next dawn." -f "{ccLS} {'' if i else '(-1)'}|{character().cc_str(ccLS)}" -footer "{ctx.prefix}{ctx.alias}" '''
+				else:
+					return f'''-title "{name} uses a Lightning Strike with {cc}" -f "Lightning Strike|**DC 17**" -f "{targ.name}|**DEX Save:** {save}; Success!\n{half}" -f "Lightning Strike|You can use an action to cause a bolt of lightning to leap from the staff's tip in a line that is 5 feet wide and 120 feet long. Each creature in that line must make a DC 17 Dexterity saving throw, taking 9d6 lightning damage on a failed save, or half as much damage on a successful one. This property cannot be used again until the next dawn." -f "{ccLS} {'' if i else '(-1)'}|{character().cc_str(ccLS)}" -footer "{ctx.prefix}{ctx.alias}" '''
+			else:
+				return f'''-title "{name} uses a Lightning Strike with {cc}!" -f "Lightning Strike|**DC 17**\n(No Target Specified.)" -f "Lightning Strike|You can use an action to cause a bolt of lightning to leap from the staff's tip in a line that is 5 feet wide and 120 feet long. Each creature in that line must make a DC 17 Dexterity saving throw, taking 9d6 lightning damage on a failed save, or half as much damage on a successful one. This property cannot be used again until the next dawn." -f "{ccLS} {'' if i else '(-1)'}|{character().cc_str(ccLS)}" -footer "{ctx.prefix}{ctx.alias}" '''
+		else:
+			return f'''-title "{name} uses a Lightning Strike with {cc}!" -f "Lightning Strike|You can use an action to cause a bolt of lightning to leap from the staff's tip in a line that is 5 feet wide and 120 feet long. Each creature in that line must make a DC 17 Dexterity saving throw, taking 9d6 lightning damage on a failed save, or half as much damage on a successful one. This property cannot be used again until the next dawn." -f "{ccLS} {'' if i else '(-1)'}|{character().cc_str(ccLS)}" -footer "{ctx.prefix}{ctx.alias}" '''
+	else:
+		return f'''-title "{name} already used their {cc} to Lightning Strike!" -desc "You need to wait until dawn to use this feature again." -f "{ccLS}|{character().cc_str(ccLS)}" -footer "{ctx.prefix}{ctx.alias}" '''
+
+elif '&1&'.lower() in 'clap':
+	if vTC or i:
+		if c:
+			if a.get('t'):
+				character().mod_cc(ccTC,-1) if not i else ''
+				dc, out = 17, [' -f "Staff of Thunder and Lightning|DC 17"']
+				targets = a.get('t')
+				targ = c.get_combatant(t)
+				tc=vroll('2d6[thunder]')
+				tcf=tc.total
+				tch=tc.total//2
+				for target in targets:
+					targList = target.split('|')
+					targComb = combat().get_combatant(targList[0])
+					targName = targComb.name
+					targARGs = argparse(targList[1] if len(targList)>1 else [])
+					targBonus = targARGs.get('sb')
+					dice = targComb.saves.get("con").d20(targARGs.adv(boolwise=True))
+					save = targ.save('con') if targ else err(f"Your target '{t}' is not in combat.")
+				if save.total<17 and targ:
+					dam=targ.damage(tcf)
+					targ.add_effect('Deafen - Staff of Thunder and Lightning','',10,desc='You can use an action to cause the staff to issue a deafening thunderclap, audible out to 600 feet. Each creature within 60 feet of you (not including you) must make a DC 17 Constitution saving throw. On a failed save, a creature takes 2d6 thunder damage and becomes deafened for 1 minute. On a successful save, a creature takes half damage and is not deafened. This property cannot be used again until the next dawn."')
+				if save.total>17 and targ:
+					ha=targ.damage(tch)
+					return f'''-title "{name} tries to use {cc} to Thunderclap!" -f "Thunderclap|**DC 17**" -f "{targ.name}|**CON Save:** {save}; Failure!\n{dam}" -f "Thunderclap|You can use an action to cause the staff to issue a deafening thunderclap, audible out to 600 feet. Each creature within 60 feet of you (not including you) must make a DC 17 Constitution saving throw. On a failed save, a creature takes 2d6 thunder damage and becomes deafened for 1 minute. On a successful save, a creature takes half damage and isn't deafened. This property cannot be used again until the next dawn." -f "{ccTC}{' (-1)' if vTC and not i else ''}|{character().cc_str(ccTC)}" -footer "{ctx.prefix}{ctx.alias}" '''
+				else:
+					return f'''-title "{name} tries to use {cc} to Thunderclap!" -f "Thunderclap|**DC 17**" -f "{targ.name}|**CON Save:** {save}; Success!\n{ha}" -f "Thunderclap|You can use an action to cause the staff to issue a deafening thunderclap, audible out to 600 feet. Each creature within 60 feet of you (not including you) must make a DC 17 Constitution saving throw. On a failed save, a creature takes 2d6 thunder damage and becomes deafened for 1 minute. On a successful save, a creature takes half damage and isn't deafened. This property cannot be used again until the next dawn." -f "{ccTC}{' (-1)' if vTC and not i else ''}|{character().cc_str(ccTC)}" -footer "{ctx.prefix}{ctx.alias}" '''
+			else:
+				return f'''-title "{name} tries to use {cc} to Thunderclap!" -f "Deafen|**DC 17**\n(No Target Specified.)" -f "Thunderclap|You can use an action to cause the staff to issue a deafening thunderclap, audible out to 600 feet. Each creature within 60 feet of you (not including you) must make a DC 17 Constitution saving throw. On a failed save, a creature takes 2d6 thunder damage and becomes deafened for 1 minute. On a successful save, a creature takes half damage and isn't deafened. This property cannot be used again until the next dawn." -f "{ccTC}{' (-1)' if vTC and not i else ''}|{character().cc_str(ccTC)}" -footer "{ctx.prefix}{ctx.alias}" '''
+		else:
+			return f'''-title "{name} tries to use {cc} to Thunderclap!" -f "Deafen|**DC 17**\n(Cannot apply effects outside of combat.)" -f "Thunderclap|You can use an action to cause the staff to issue a deafening thunderclap, audible out to 600 feet. Each creature within 60 feet of you (not including you) must make a DC 17 Constitution saving throw. On a failed save, a creature takes 2d6 thunder damage and becomes deafened for 1 minute. On a successful save, a creature takes half damage and isn't deafened. This property cannot be used again until the next dawn." -f "{ccTC}{' (-1)' if vTC and not i else ''}|{character().cc_str(ccTC)}" -footer "{ctx.prefix}{ctx.alias}" '''
+	else:
+		return f'''-title "{name} already used their {cc} to Thunderclap!" -desc "You need to wait until dawn to use this feature again." -f "{ccTC}|{character().cc_str(ccTC)}" -footer "{ctx.prefix}{ctx.alias}" '''
+elif '&1&'.lower() in 'duel':
+	if vTL or i:
+		character().mod_cc(ccTL,-1) if not i else ''
+		return f'''-title "{name} tries to use {cc} to do Thunder and Lightning!" -f "You can use an action to use the Lightning Strike and Thunderclap properties at the same time. Doing so doesn't expend the daily use of those properties, only the use of this one. (use `-i` at the end of thunder and lightning to not expend a use)"'''
+elif '&1&'.lower() in 'help?':
+    return f'''-title "Using the {cc}:" -desc "{f}" -f "{f1}" -f "{ctx.prefix}{ctx.alias}" '''
+else:
+    return f'''-title "{name} checks their {cc}!" -desc "Looking down you see the {cc} is still a Staff.  Use `{ctx.prefix}help {ctx.alias}` for a guide to using this alias." -f "{ccL}|{character().cc_str(ccL)}|inline" -f "{ccT}|{character().cc_str(ccT)}|inline" -f "{ccLS}|{character().cc_str(ccLS)}|inline" -f "{ccTC}|{character().cc_str(ccTC)}|inline" -f "{ctx.prefix}{ctx.alias}" -f "{ccTL}|{character().cc_str(ccTL)}|inline" '''
+</drac2>
+-thumb "https://media.discordapp.net/attachments/759274660587634708/856997646447542292/636284771044710531.jpeg" -color <color>
